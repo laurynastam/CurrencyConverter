@@ -1,0 +1,244 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Currency converter</h1>
+
+    <div id="currencyConverterWrapper">
+
+        <br />
+        <br />
+        <div id="errorsContainer">
+
+        </div>
+        <br />
+        <br />
+
+
+
+
+        <label for="valueInCurrency1">Sum in currency 1: </label>
+        <input type="type" name="valueInCurrency1" id="valueInCurrency1" onkeyup="currency1ValueChanged()" />
+        <label for="currencySelector">Currency: </label>
+        @{
+            if (ViewBag.CurrentCurencies != null)
+            {
+                <select id="currencySelector" onchange="currencyChanged()">
+                    @{
+
+                        foreach (var item in ViewBag.CurrentCurencies)
+                        {
+                            <option value="@item.Rate">
+                                @item.NameOfCurency
+                            </option>
+
+                        }
+
+                    }
+                </select>
+                <p id="currencyConvertionRate">Currency convertion rate to EUR: @ViewBag.CurrentCurencies[0].Rate </p>
+            }
+            else
+            {
+                <h1 style="color:red">Failed to fetch currencies...</h1>
+            }
+
+        }
+        <br />
+        <br />
+
+
+
+
+        <label for="valueInCurrency2">Sum in currency 2: </label>
+        <input type="type" name="valueInCurrency2" id="valueInCurrency2" onkeyup="currency2ValueChanged()" />
+        <label for="currencySelector">Currency: </label>
+        @{
+            if (ViewBag.CurrentCurencies != null)
+            {
+                <select id="currencySelector2" onchange="currencyChanged()">
+                    @{
+
+                        foreach (var item in ViewBag.CurrentCurencies)
+                        {
+                            <option value="@item.Rate">
+                                @item.NameOfCurency
+                            </option>
+
+                        }
+
+                    }
+                </select>
+                <p id="currencyConvertionRate2">Currency convertion rate to EUR: @ViewBag.CurrentCurencies[0].Rate </p>
+            }
+            else
+            {
+                <h1 style="color:red">Failed to fetch currencies...</h1>
+            }
+
+        }
+
+        <br />
+        <br />
+
+
+
+        @{
+            if (ViewBag.AwailableHistoricalDates != null)
+            {
+                <div id="historicalConvertionController">
+                    <label for="useHistoricalRate">Use historical conversion rate: </label>
+                    <input type="checkbox" name="useHistoricalRate" id="useHistoricalRate" onclick="resetHistorical()" />
+                    <br />
+                    <select id="historicalRateDateSelector" onchange="updateCurrencySellector()" disabled>
+                        @{
+
+                            foreach (var item in ViewBag.AwailableHistoricalDates)
+                            {
+                                <option value="@item">
+                                    @item
+                                </option>
+                            }
+
+                        }
+                    </select>
+                </div>
+
+
+            }
+
+        }
+        <br />
+        <br />
+
+    </div>
+
+</div>
+
+<script>
+
+    function resetHistorical() {
+        var checkBox = $("#useHistoricalRate");
+        if (checkBox.is(":checked")) {
+            $('#historicalRateDateSelector').removeAttr("disabled"); 
+            $("#errorsContainer")[0].innerHTML = "";
+            $("#errorsContainer")[0].innerHTML = "";
+            updateCurrencySellector();
+        }
+        else {
+            $('#historicalRateDateSelector').prop("disabled", true);
+            location.reload();
+        }
+    }
+
+    function updateCurrencySellector() {
+        let selectedDate = $("#historicalRateDateSelector").val();
+        $.ajax({
+            type: "GET",
+            url: "/Home/GetHistoricCurencies",
+            data: { Date: selectedDate },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'json',
+            success: function (result) {
+                $("#currencySelector")[0].innerHTML = "";
+                $("#currencySelector2")[0].innerHTML = "";
+                let newOptions = "";
+                for (let i = 0; i < result.historicalData.length; i++) {
+                    newOptions += "<option value='" + result.historicalData[i].rate + "'> " + result.historicalData[i].nameOfCurency + " </option>"
+                }
+                $("#currencySelector2")[0].innerHTML = newOptions;
+                $("#currencySelector")[0].innerHTML = newOptions;
+
+            },
+            error: function (xhr, status, err) {
+            }
+        });
+    }
+
+    function currency2ValueChanged() {
+        $("#errorsContainer")[0].innerHTML = "";
+        $("#valueInCurrency1").val("");
+        let valueInCurrency2 = parseFloat($("#valueInCurrency2").val());
+        let convertionRate = parseFloat($("#currencySelector").val());
+        let conversionRate2 = parseFloat($("#currencySelector2").val());
+        let convert = true;
+        if (typeof (valueInCurrency2) == "undefined" || valueInCurrency2 == null || isNaN(valueInCurrency2)) {
+            $("#errorsContainer")[0].innerHTML += "Failed to determine value in converted currency";
+            convert = false;
+        }
+        if (typeof (convertionRate) == "undefined" || convertionRate == null || isNaN(convertionRate)) {
+            $("#errorsContainer")[0].innerHTML += "Failed to determine conversion rate";
+            convert = false;
+        }
+        if (typeof (conversionRate2) == "undefined" || conversionRate2 == null || isNaN(conversionRate2)) {
+            $("#errorsContainer")[0].innerHTML += "Failed to determine second conversion rate";
+            convert = false;
+        }
+        if (convert) {
+            let sumInEuros = valueInCurrency2 / conversionRate2;
+            let sumInSecondCurrency = sumInEuros * convertionRate;
+            $("#valueInCurrency1").val(sumInSecondCurrency);
+        }
+    }
+
+    function currency1ValueChanged() {
+        $("#errorsContainer")[0].innerHTML = "";
+        $("#valueInCurrency2").val("");
+        let valueInCurrency1 = parseFloat($("#valueInCurrency1").val());
+        let convertionRate = parseFloat($("#currencySelector").val());
+        let conversionRate2 = parseFloat($("#currencySelector2").val());
+        let convert = true;
+        if (typeof (valueInCurrency1) == "undefined" || valueInCurrency1 == null || isNaN(valueInCurrency1)) {
+            $("#errorsContainer")[0].innerHTML += "Failed to determine value in Euros";
+            convert = false;
+        }
+        if (typeof (convertionRate) == "undefined" || convertionRate == null || isNaN(convertionRate)) {
+            $("#errorsContainer")[0].innerHTML += "Failed to determine conversion rate";
+            convert = false;
+        }
+        if (typeof (conversionRate2) == "undefined" || conversionRate2 == null || isNaN(conversionRate2)) {
+            $("#errorsContainer")[0].innerHTML += "Failed to determine second conversion rate";
+            convert = false;
+        }
+
+        if (convert) {
+            let sumInEuros = valueInCurrency1 / convertionRate;
+            let sumInSecondCurrency = sumInEuros * conversionRate2;
+            $("#valueInCurrency2").val(sumInSecondCurrency);
+        }
+    }
+
+
+
+    function currencyChanged() {
+        $("#valueInCurrency1").val("")
+        $("#valueInCurrency2").val("");
+        $("#currencyConvertionRate")[0].innerText = "Currency convertion rate to EUR: " + $("#currencySelector").val();
+        $("#currencyConvertionRate2")[0].innerText = "Currency convertion rate to EUR: " + $("#currencySelector2").val();
+    }
+
+</script>
+
+<style>
+    #currencyConverterWrapper {
+        width: 50%;
+        margin-left: 25%;
+        border: 2px solid rgba(109,138,255,0.7);
+        border-radius: 6px;
+        min-height: 200px;
+        padding: 20px;
+    }
+
+    #historicalConvertionController {
+        padding: 10px;
+        border: 2px solid rgba(170,239,255,0.9);
+        border-radius: 8px;
+    }
+
+    #errorsContainer {
+        color: red;
+        font-weight: bold;
+    }
+
+</style>
